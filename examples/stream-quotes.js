@@ -1,6 +1,6 @@
 import { watchQuotes } from '../src/index.js';
 
-const symbols = (process.argv[2] || 'EURUSD,GBPUSD').split(',').map((s) => s.trim());
+const symbols = (process.argv[2] || 'XAUUSD,XAGUSD').split(',').map((s) => s.trim());
 const controller = new AbortController();
 
 process.on('SIGINT', () => controller.abort());

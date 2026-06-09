@@ -6,9 +6,39 @@ import { fileURLToPath } from 'node:url';
 const BIND_HOST = process.env.MT5_BIND_HOST || '127.0.0.1';
 const TCP_PORT = Number(process.env.MT5_TCP_PORT || 9527);
 const HTTP_PORT = Number(process.env.MT5_HTTP_PORT || 9528);
+const QUOTE_TTL_MS = Number(process.env.MT5_QUOTE_TTL_MS || 60_000);
+const QUOTE_PRUNE_MS = Number(process.env.MT5_QUOTE_PRUNE_MS || 10_000);
 
 /** @type {Map<string, { symbol: string, bid: number, ask: number, time: number, updatedAt: number }>} */
 const quotes = new Map();
+
+function isQuoteFresh(quote, now = Date.now()) {
+  return now - quote.updatedAt <= QUOTE_TTL_MS;
+}
+
+function getActiveQuotes() {
+  const now = Date.now();
+  return [...quotes.values()].filter((quote) => isQuoteFresh(quote, now));
+}
+
+function pruneStaleQuotes() {
+  const now = Date.now();
+  const removed = [];
+  for (const [symbol, quote] of quotes) {
+    if (!isQuoteFresh(quote, now)) {
+      quotes.delete(symbol);
+      removed.push(symbol);
+    }
+  }
+  for (const symbol of removed) {
+    broadcastSse('remove', { symbol });
+  }
+  return removed;
+}
+
+function startQuotePruner() {
+  setInterval(pruneStaleQuotes, QUOTE_PRUNE_MS).unref();
+}
 
 /** @type {Set<import('node:http').ServerResponse>} */
 const sseClients = new Set();
@@ -49,7 +79,7 @@ function handleSseStream(req, res) {
     'X-Accel-Buffering': 'no',
   });
   res.write(': connected\n\n');
-  sseWrite(res, 'snapshot', [...quotes.values()]);
+  sseWrite(res, 'snapshot', getActiveQuotes());
   sseClients.add(res);
   req.on('close', () => sseClients.delete(res));
 }
@@ -126,7 +156,7 @@ function renderQuoteRows(list) {
 }
 
 function renderDashboard() {
-  const rows = renderQuoteRows([...quotes.values()]);
+  const rows = renderQuoteRows(getActiveQuotes());
 
   return `<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><title>MT5 行情</title>
@@ -139,7 +169,7 @@ th{background:#1e293b}.empty{color:#f87171}
 .status-live{color:#4ade80}.status-offline{color:#f87171}
 </style></head><body>
 <h1>MT5 实时行情</h1>
-<p>SSE 推送 | 连接: <span id="status" class="status-offline">连接中...</span> | 品种数: <span id="count">${quotes.size}</span> | API: <a href="/quotes" style="color:#38bdf8">/quotes</a> · <a href="/quotes/stream" style="color:#38bdf8">/quotes/stream</a></p>
+<p>SSE 推送 | 连接: <span id="status" class="status-offline">连接中...</span> | 品种数: <span id="count">${getActiveQuotes().length}</span> | API: <a href="/quotes" style="color:#38bdf8">/quotes</a> · <a href="/quotes/stream" style="color:#38bdf8">/quotes/stream</a></p>
 <table><thead><tr><th>品种</th><th>Bid</th><th>Ask</th><th>Spread</th><th>更新</th></tr></thead>
 <tbody id="rows">${rows}</tbody>
 </table>
@@ -200,6 +230,13 @@ function connectStream() {
   es.addEventListener('quote', (event) => {
     upsertQuote(JSON.parse(event.data));
   });
+  es.addEventListener('remove', (event) => {
+    const { symbol } = JSON.parse(event.data);
+    quotes.delete(symbol);
+    document.querySelector('tr[data-symbol="' + symbol + '"]')?.remove();
+    if (!quotes.size) renderTable();
+    else document.getElementById('count').textContent = quotes.size;
+  });
   es.onopen = () => setStatus('已连接', true);
   es.onerror = () => setStatus('重连中...', false);
   return es;
@@ -230,13 +267,13 @@ function startHttpServer() {
 
     if (req.method === 'GET' && req.url === '/health') {
       res.writeHead(200);
-      res.end(JSON.stringify({ ok: true, quotes: quotes.size }));
+      res.end(JSON.stringify({ ok: true, quotes: getActiveQuotes().length }));
       return;
     }
 
     if (req.method === 'GET' && req.url === '/quotes') {
       res.writeHead(200);
-      res.end(JSON.stringify([...quotes.values()]));
+      res.end(JSON.stringify(getActiveQuotes()));
       return;
     }
 
@@ -249,7 +286,7 @@ function startHttpServer() {
     if (req.method === 'GET' && match) {
       const symbol = decodeURIComponent(match[1]).toUpperCase();
       const quote = quotes.get(symbol);
-      if (!quote) {
+      if (!quote || !isQuoteFresh(quote)) {
         res.writeHead(404);
         res.end(JSON.stringify({ error: `暂无 ${symbol} 行情，请运行 npm run auto 启动 Python 桥接` }));
         return;
@@ -276,11 +313,12 @@ function startHttpServer() {
 }
 
 export function getQuote(symbol) {
-  return quotes.get(symbol.toUpperCase()) ?? null;
+  const quote = quotes.get(symbol.toUpperCase()) ?? null;
+  return quote && isQuoteFresh(quote) ? quote : null;
 }
 
 export function getAllQuotes() {
-  return [...quotes.values()];
+  return getActiveQuotes();
 }
 
 export function createQuoteStore() {
@@ -299,6 +337,7 @@ function isMainModule() {
 if (isMainModule()) {
   console.log('[mt5] starting quote server...');
   startSseHeartbeat();
+  startQuotePruner();
   startTcpServer();
   startHttpServer();
 }

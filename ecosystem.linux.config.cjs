@@ -4,7 +4,7 @@ module.exports = {
     {
       name: "mt5-quotes",
       cwd: __dirname,
-      script: "src/server.js",
+      script: "src/start-server.js",
       interpreter: "node",
       instances: 1,
       exec_mode: "fork",

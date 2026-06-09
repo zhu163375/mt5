@@ -2,7 +2,7 @@
 setlocal
 
 set "MT5_PATH=E:\workspace\服务器\MT5\terminal64.exe"
-set "MT5_TCP_HOST=YOUR_LINUX_SERVER_IP"
+set "MT5_TCP_HOST=47.86.17.193"
 set "MT5_TCP_PORT=9527"
 set "MT5_SYMBOLS=XAUUSD,EURUSD,USDCNH"
 

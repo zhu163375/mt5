@@ -26,7 +26,11 @@ if (-not $env:MT5_TCP_HOST) {
 }
 
 $Mt5Exe = $env:MT5_PATH
-if (-not (Test-Path $Mt5Exe)) {
+$mt5Exists = Test-Path -LiteralPath $Mt5Exe
+if (-not $mt5Exists) {
+  $mt5Exists = (cmd /c "if exist `"$Mt5Exe`" (echo 1) else (echo 0)") -eq "1"
+}
+if (-not $mt5Exists) {
   throw "MT5 not found: $Mt5Exe"
 }
 

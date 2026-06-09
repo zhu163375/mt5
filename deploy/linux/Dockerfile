@@ -13,4 +13,4 @@ ENV MT5_HTTP_PORT=9528
 
 EXPOSE 9527 9528
 
-CMD ["node", "src/server.js"]
+CMD ["node", "src/start-server.js"]

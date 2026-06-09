@@ -95,7 +95,10 @@ def main() -> int:
     try:
         while True:
             now = time.time()
-            if sock is None and now >= reconnect_at:
+            if sock is None:
+                if now < reconnect_at:
+                    time.sleep(0.5)
+                    continue
                 sock = connect_tcp()
                 if sock is None:
                     reconnect_at = now + 3

@@ -25,7 +25,7 @@ const apps = [
   {
     name: "mt5-quotes",
     cwd: root,
-    script: "src/server.js",
+    script: "src/start-server.js",
     interpreter: "node",
     instances: 1,
     exec_mode: "fork",

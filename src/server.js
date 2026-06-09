@@ -61,7 +61,7 @@ function startTcpServer() {
     console.log(`[mt5] TCP 服务监听 ${BIND_HOST}:${TCP_PORT}，等待行情推送`);
   }).on('error', (err) => {
     console.error(`[mt5] TCP 启动失败 ${BIND_HOST}:${TCP_PORT}`, err.message);
-    process.exit(1);
+    console.error('[mt5] HTTP 仍会启动，可用 /health 检查服务状态');
   });
 
   return server;
@@ -179,14 +179,21 @@ export function createQuoteStore() {
   return { getQuote, getAllQuotes, quotes };
 }
 
-function isMainModule() {
-  const entry = process.argv[1];
-  if (!entry) return false;
-  return path.resolve(entry) === fileURLToPath(import.meta.url);
-}
-
-if (isMainModule()) {
+export function startQuoteServer() {
   console.log('[mt5] starting quote server...');
   startTcpServer();
   startHttpServer();
+}
+
+function isMainModule() {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  const resolvedEntry = path.resolve(entry);
+  const modulePath = fileURLToPath(import.meta.url);
+  if (resolvedEntry === modulePath) return true;
+  return path.basename(resolvedEntry) === 'server.js';
+}
+
+if (isMainModule()) {
+  startQuoteServer();
 }

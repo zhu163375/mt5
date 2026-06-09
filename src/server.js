@@ -1,5 +1,6 @@
 import net from 'node:net';
 import http from 'node:http';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const BIND_HOST = process.env.MT5_BIND_HOST || '127.0.0.1';
@@ -58,6 +59,9 @@ function startTcpServer() {
 
   server.listen(TCP_PORT, BIND_HOST, () => {
     console.log(`[mt5] TCP 服务监听 ${BIND_HOST}:${TCP_PORT}，等待行情推送`);
+  }).on('error', (err) => {
+    console.error(`[mt5] TCP 启动失败 ${BIND_HOST}:${TCP_PORT}`, err.message);
+    process.exit(1);
   });
 
   return server;
@@ -155,6 +159,9 @@ function startHttpServer() {
   server.listen(HTTP_PORT, BIND_HOST, () => {
     console.log(`[mt5] HTTP API  http://${BIND_HOST}:${HTTP_PORT}`);
     console.log(`[mt5] 浏览器查看 http://127.0.0.1:${HTTP_PORT}/`);
+  }).on('error', (err) => {
+    console.error(`[mt5] HTTP 启动失败 ${BIND_HOST}:${HTTP_PORT}`, err.message);
+    process.exit(1);
   });
 
   return server;
@@ -172,8 +179,14 @@ export function createQuoteStore() {
   return { getQuote, getAllQuotes, quotes };
 }
 
-const isMain = process.argv[1] === fileURLToPath(import.meta.url);
-if (isMain) {
+function isMainModule() {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  return path.resolve(entry) === fileURLToPath(import.meta.url);
+}
+
+if (isMainModule()) {
+  console.log('[mt5] starting quote server...');
   startTcpServer();
   startHttpServer();
 }

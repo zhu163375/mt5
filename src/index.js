@@ -33,12 +33,89 @@ export async function fetchAllQuotes() {
 }
 
 /**
- * 订阅行情更新（轮询 HTTP API）
+ * 订阅行情更新（SSE 长连接，行情变化时推送）
+ * @param {(quote: Quote) => void} onQuote
+ * @param {{ symbols?: string[], signal?: AbortSignal, reconnectMs?: number }} [options]
+ */
+export async function watchQuotesStream(onQuote, options = {}) {
+  const filter = options.symbols
+    ? new Set(options.symbols.map((symbol) => symbol.toUpperCase()))
+    : null;
+  const url = `${HTTP_BASE}/quotes/stream`;
+
+  while (!options.signal?.aborted) {
+    try {
+      const res = await fetch(url, { signal: options.signal });
+      if (!res.ok) throw new Error(`SSE 连接失败: ${res.status}`);
+      if (!res.body) throw new Error('SSE 响应无 body');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (!options.signal?.aborted) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        buffer = consumeSseBuffer(buffer, (event, data) => {
+          if (event === 'snapshot') {
+            for (const quote of data) {
+              if (!filter || filter.has(quote.symbol)) onQuote(quote);
+            }
+            return;
+          }
+          if (event === 'quote' && (!filter || filter.has(data.symbol))) {
+            onQuote(data);
+          }
+        });
+      }
+    } catch (err) {
+      if (options.signal?.aborted) break;
+      console.error('[watch] SSE 断开，重连中...', err.message);
+      await sleep(options.reconnectMs ?? 3000, options.signal);
+    }
+  }
+}
+
+/**
+ * @param {string} buffer
+ * @param {(event: string, data: any) => void} onEvent
+ * @returns {string}
+ */
+function consumeSseBuffer(buffer, onEvent) {
+  const blocks = buffer.split('\n\n');
+  const rest = blocks.pop() ?? '';
+
+  for (const block of blocks) {
+    if (!block.trim() || block.startsWith(':')) continue;
+
+    let event = 'message';
+    let dataLine = '';
+
+    for (const line of block.split('\n')) {
+      if (line.startsWith('event:')) event = line.slice(6).trim();
+      if (line.startsWith('data:')) dataLine += line.slice(5).trim();
+    }
+
+    if (!dataLine) continue;
+    onEvent(event, JSON.parse(dataLine));
+  }
+
+  return rest;
+}
+
+/**
+ * 订阅行情更新（轮询 HTTP API，兼容旧用法）
  * @param {string[]} symbols
  * @param {(quote: Quote) => void} onQuote
- * @param {{ intervalMs?: number, signal?: AbortSignal }} [options]
+ * @param {{ intervalMs?: number, signal?: AbortSignal, mode?: 'poll' | 'sse' }} [options]
  */
 export async function watchQuotes(symbols, onQuote, options = {}) {
+  if (options.mode !== 'poll') {
+    return watchQuotesStream(onQuote, { ...options, symbols });
+  }
+
   const intervalMs = options.intervalMs ?? 500;
   const seen = new Map();
 

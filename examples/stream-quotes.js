@@ -5,7 +5,7 @@ const controller = new AbortController();
 
 process.on('SIGINT', () => controller.abort());
 
-console.log(`监听品种: ${symbols.join(', ')}（Ctrl+C 退出）\n`);
+console.log(`监听品种: ${symbols.join(', ')}（SSE 推送，Ctrl+C 退出）\n`);
 
 try {
   await watchQuotes(
@@ -17,7 +17,7 @@ try {
         `${quote.symbol}  bid=${quote.bid}  ask=${quote.ask}  spread=${spread} pts`
       );
     },
-    { intervalMs: 300, signal: controller.signal }
+    { signal: controller.signal, mode: 'sse' },
   );
 } catch (err) {
   if (err.name !== 'AbortError') {

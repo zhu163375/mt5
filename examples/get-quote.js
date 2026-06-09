@@ -1,6 +1,6 @@
 import { fetchQuote } from '../src/index.js';
 
-const symbol = process.argv[2] || 'EURUSD';
+const symbol = process.argv[2] || 'XAGUSD';
 
 try {
   const quote = await fetchQuote(symbol);

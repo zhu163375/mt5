@@ -2,6 +2,8 @@ import net from 'node:net';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { handleTradingRoutes, isTradeEnabled } from './trading-routes.js';
+import { handleSwaggerRoutes } from './swagger.js';
 
 const BIND_HOST = process.env.MT5_BIND_HOST || '127.0.0.1';
 const TCP_PORT = Number(process.env.MT5_TCP_PORT || 9527);
@@ -256,18 +258,35 @@ setInterval(() => {
 }
 
 function startHttpServer() {
-  const server = http.createServer((req, res) => {
+  const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html')) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(renderDashboard());
       return;
     }
 
+    const pathname = req.url?.split('?')[0] ?? '';
+    if (handleSwaggerRoutes(req, res, pathname)) return;
+
+    if (pathname.startsWith('/rpc/')) {
+      if (!isTradeEnabled()) {
+        res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: 'trade disabled', hint: 'set MT5_TRADE_ENABLED=1 on Windows gateway' }));
+        return;
+      }
+      const handled = await handleTradingRoutes(req, res, pathname);
+      if (handled) return;
+    }
+
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
     if (req.method === 'GET' && req.url === '/health') {
+      const payload = { ok: true, quotes: getActiveQuotes().length };
+      if (isTradeEnabled()) {
+        payload.trade = true;
+      }
       res.writeHead(200);
-      res.end(JSON.stringify({ ok: true, quotes: getActiveQuotes().length }));
+      res.end(JSON.stringify(payload));
       return;
     }
 
@@ -302,7 +321,12 @@ function startHttpServer() {
 
   server.listen(HTTP_PORT, BIND_HOST, () => {
     console.log(`[mt5] HTTP API  http://${BIND_HOST}:${HTTP_PORT}`);
+    console.log(`[mt5] Swagger     http://127.0.0.1:${HTTP_PORT}/docs`);
+    console.log(`[mt5] OpenAPI     http://127.0.0.1:${HTTP_PORT}/openapi.json`);
     console.log(`[mt5] SSE 推送   http://127.0.0.1:${HTTP_PORT}/quotes/stream`);
+    if (isTradeEnabled()) {
+      console.log(`[mt5] 交易 RPC   http://127.0.0.1:${HTTP_PORT}/rpc/get_account_information`);
+    }
     console.log(`[mt5] 浏览器查看 http://127.0.0.1:${HTTP_PORT}/`);
   }).on('error', (err) => {
     console.error(`[mt5] HTTP 启动失败 ${BIND_HOST}:${HTTP_PORT}`, err.message);

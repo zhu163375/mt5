@@ -1,0 +1,426 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MT5 Local Gateway API",
+    "description": "本地 MT5 网关：行情 HTTP/SSE + MetaApi 兼容交易 RPC（HTTP JSON，非 MetaApi 云 RPC 协议）。\n\n- 行情：由 Python bridge 推送到 TCP 9527，Node 聚合后提供 HTTP\n- 交易：Node `/rpc/*` 代理到 Python `9530`，需 `MT5_TRADE_ENABLED=1`\n\nSwagger UI: `/docs` | OpenAPI: `/openapi.json`",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "http://127.0.0.1:9528", "description": "本地网关" }
+  ],
+  "tags": [
+    { "name": "system", "description": "健康检查" },
+    { "name": "quotes", "description": "实时行情" },
+    { "name": "trade", "description": "MetaApi 兼容交易（市价开平/查询）" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["system"],
+        "summary": "服务健康检查",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "quotes": { "type": "integer" },
+                    "trade": { "type": "boolean" }
+                  }
+                },
+                "example": { "ok": true, "quotes": 3, "trade": true }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/quotes": {
+      "get": {
+        "tags": ["quotes"],
+        "summary": "全部品种行情",
+        "responses": {
+          "200": {
+            "description": "行情列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Quote" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/quote/{symbol}": {
+      "get": {
+        "tags": ["quotes"],
+        "summary": "单品种行情",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "example": "XAUUSD" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Quote" }
+              }
+            }
+          },
+          "404": { "description": "暂无行情" }
+        }
+      }
+    },
+    "/quotes/stream": {
+      "get": {
+        "tags": ["quotes"],
+        "summary": "SSE 行情推送",
+        "description": "Content-Type: text/event-stream。事件：snapshot、quote、remove。",
+        "responses": {
+          "200": { "description": "SSE 流" }
+        }
+      }
+    },
+    "/rpc/get_account_information": {
+      "get": {
+        "tags": ["trade"],
+        "summary": "get_account_information",
+        "description": "MetaApi 等价：查询 MT 账户信息",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AccountInfo" }
+              }
+            }
+          },
+          "503": { "description": "交易未启用 (MT5_TRADE_ENABLED=0)" }
+        }
+      }
+    },
+    "/rpc/get_positions": {
+      "get": {
+        "tags": ["trade"],
+        "summary": "get_positions",
+        "description": "MetaApi 等价：当前全部持仓",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Position" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/get_position/{positionId}": {
+      "get": {
+        "tags": ["trade"],
+        "summary": "get_position",
+        "parameters": [
+          {
+            "name": "positionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Position" }
+              }
+            }
+          },
+          "404": { "description": "持仓不存在" }
+        }
+      }
+    },
+    "/rpc/get_order/{orderId}": {
+      "get": {
+        "tags": ["trade"],
+        "summary": "get_order",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Order" }
+              }
+            }
+          },
+          "404": { "description": "订单不存在" }
+        }
+      }
+    },
+    "/rpc/get_history_orders_by_time_range": {
+      "get": {
+        "tags": ["trade"],
+        "summary": "get_history_orders_by_time_range",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date-time" },
+            "example": "2026-06-01T00:00:00Z"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date-time" },
+            "example": "2026-06-16T23:59:59Z"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Order" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/create_market_buy_order": {
+      "post": {
+        "tags": ["trade"],
+        "summary": "create_market_buy_order",
+        "description": "MetaApi 等价：市价开多（立即成交，非挂单）",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MarketOrderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成交成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TradeResult" }
+              }
+            }
+          },
+          "400": { "description": "拒单（如 AutoTrading 未开、填充模式错误）" }
+        }
+      }
+    },
+    "/rpc/create_market_sell_order": {
+      "post": {
+        "tags": ["trade"],
+        "summary": "create_market_sell_order",
+        "description": "MetaApi 等价：市价开空",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MarketOrderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成交成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TradeResult" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/close_position": {
+      "post": {
+        "tags": ["trade"],
+        "summary": "close_position",
+        "description": "MetaApi 等价：按 positionId 全平",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClosePositionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CloseResult" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc/close_position_partially": {
+      "post": {
+        "tags": ["trade"],
+        "summary": "close_position_partially",
+        "description": "MetaApi 等价：部分平仓",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClosePartialRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CloseResult" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string" },
+          "bid": { "type": "number" },
+          "ask": { "type": "number" },
+          "time": { "type": "integer" },
+          "updatedAt": { "type": "integer", "description": "本地更新时间戳 ms" }
+        }
+      },
+      "AccountInfo": {
+        "type": "object",
+        "properties": {
+          "login": { "type": "string" },
+          "server": { "type": "string" },
+          "balance": { "type": "number" },
+          "equity": { "type": "number" },
+          "margin": { "type": "number" },
+          "freeMargin": { "type": "number" },
+          "marginLevel": { "type": "number" },
+          "tradeAllowed": { "type": "boolean" }
+        }
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "positionId": { "type": "string" },
+          "symbol": { "type": "string" },
+          "volume": { "type": "number" },
+          "type": { "type": "string", "example": "POSITION_TYPE_BUY" },
+          "side": { "type": "string", "enum": ["BUY", "SELL"] },
+          "comment": { "type": "string" },
+          "brokerComment": { "type": "string" },
+          "openPrice": { "type": "number" },
+          "currentPrice": { "type": "number" },
+          "profit": { "type": "number" }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "orderId": { "type": "string" },
+          "symbol": { "type": "string" },
+          "volume": { "type": "number" },
+          "comment": { "type": "string" }
+        }
+      },
+      "MarketOrderRequest": {
+        "type": "object",
+        "required": ["symbol", "volume"],
+        "properties": {
+          "symbol": { "type": "string", "example": "XAUUSD" },
+          "volume": { "type": "number", "example": 0.01 },
+          "stopLoss": { "type": "number" },
+          "takeProfit": { "type": "number" },
+          "comment": { "type": "string", "example": "order-no-123" },
+          "clientId": { "type": "string", "description": "可选，与 MetaApi tradeOptions 一致；本地仅记录不转发" }
+        }
+      },
+      "ClosePositionRequest": {
+        "type": "object",
+        "required": ["positionId"],
+        "properties": {
+          "positionId": { "type": "string" },
+          "comment": { "type": "string" },
+          "clientId": { "type": "string" }
+        }
+      },
+      "ClosePartialRequest": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ClosePositionRequest" },
+          {
+            "type": "object",
+            "required": ["volume"],
+            "properties": {
+              "volume": { "type": "number", "example": 0.01 }
+            }
+          }
+        ]
+      },
+      "TradeResult": {
+        "type": "object",
+        "properties": {
+          "orderId": { "type": "string" },
+          "positionId": { "type": "string" },
+          "symbol": { "type": "string" },
+          "actionType": { "type": "string", "example": "ORDER_TYPE_BUY" },
+          "volume": { "type": "number" },
+          "status": { "type": "string", "example": "success" },
+          "error": { "nullable": true }
+        }
+      },
+      "CloseResult": {
+        "type": "object",
+        "properties": {
+          "orderId": { "type": "string" },
+          "positionId": { "type": "string" },
+          "status": { "type": "string" },
+          "error": { "nullable": true }
+        }
+      }
+    }
+  }
+}

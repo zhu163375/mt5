@@ -19,6 +19,8 @@ function loadEnvFile(file) {
 }
 
 const deployEnv = loadEnvFile(path.join(root, "deploy", "config.env"));
+const tradeEnabled = String(deployEnv.MT5_TRADE_ENABLED ?? "0");
+const tradeUrl = deployEnv.MT5_TRADE_URL || "http://127.0.0.1:9530";
 
 /** @type {import('pm2').StartOptions[]} */
 const apps = [
@@ -36,6 +38,8 @@ const apps = [
       MT5_BIND_HOST: deployEnv.MT5_BIND_HOST || "127.0.0.1",
       MT5_TCP_PORT: deployEnv.MT5_TCP_PORT || "9527",
       MT5_HTTP_PORT: deployEnv.MT5_HTTP_PORT || "9528",
+      MT5_TRADE_ENABLED: tradeEnabled,
+      MT5_TRADE_URL: tradeUrl,
     },
     env_production_linux: {
       NODE_ENV: "production",
@@ -60,6 +64,22 @@ const apps = [
       MT5_TCP_PORT: deployEnv.MT5_TCP_PORT || "9527",
       MT5_SYMBOLS: deployEnv.MT5_SYMBOLS || "XAUUSD,XAGUSD,USDCNH",
       MT5_POLL_MS: deployEnv.MT5_POLL_MS || "200",
+    },
+  },
+  {
+    name: "mt5-trade",
+    cwd: root,
+    script: "bridge/mt5_trading_service.py",
+    interpreter: "python",
+    instances: 1,
+    exec_mode: "fork",
+    autorestart: true,
+    max_restarts: 20,
+    env: {
+      NODE_ENV: "production",
+      MT5_PATH: deployEnv.MT5_PATH || "",
+      MT5_TRADE_BIND_HOST: deployEnv.MT5_TRADE_BIND_HOST || "127.0.0.1",
+      MT5_TRADE_PORT: deployEnv.MT5_TRADE_PORT || "9530",
     },
   },
 ];

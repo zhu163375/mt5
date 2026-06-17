@@ -14,8 +14,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         MT5_BIND_HOST: "0.0.0.0",
-        MT5_TCP_PORT: "9527",
-        MT5_HTTP_PORT: "9528",
+        MT5_TCP_PORT: "9627",
+        MT5_HTTP_PORT: "9628",
       },
     },
   ],

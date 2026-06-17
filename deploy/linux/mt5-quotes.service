@@ -6,8 +6,8 @@ After=network.target
 Type=simple
 WorkingDirectory=/opt/mt5_project
 Environment=MT5_BIND_HOST=0.0.0.0
-Environment=MT5_TCP_PORT=9527
-Environment=MT5_HTTP_PORT=9528
+Environment=MT5_TCP_PORT=9627
+Environment=MT5_HTTP_PORT=9628
 ExecStart=/usr/bin/node src/start-server.js
 Restart=always
 RestartSec=3

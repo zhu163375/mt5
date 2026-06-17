@@ -1,4 +1,4 @@
-const HTTP_BASE = process.env.MT5_HTTP_BASE || 'http://127.0.0.1:9528';
+const HTTP_BASE = process.env.MT5_HTTP_BASE || 'http://127.0.0.1:9628';
 
 /**
  * @typedef {Object} Quote

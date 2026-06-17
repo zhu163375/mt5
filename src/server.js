@@ -6,8 +6,8 @@ import { handleTradingRoutes, isTradeEnabled } from './trading-routes.js';
 import { handleSwaggerRoutes } from './swagger.js';
 
 const BIND_HOST = process.env.MT5_BIND_HOST || '127.0.0.1';
-const TCP_PORT = Number(process.env.MT5_TCP_PORT || 9527);
-const HTTP_PORT = Number(process.env.MT5_HTTP_PORT || 9528);
+const TCP_PORT = Number(process.env.MT5_TCP_PORT || 9627);
+const HTTP_PORT = Number(process.env.MT5_HTTP_PORT || 9628);
 const QUOTE_TTL_MS = Number(process.env.MT5_QUOTE_TTL_MS || 60_000);
 const QUOTE_PRUNE_MS = Number(process.env.MT5_QUOTE_PRUNE_MS || 10_000);
 

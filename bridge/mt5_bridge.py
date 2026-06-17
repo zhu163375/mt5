@@ -12,7 +12,7 @@ import MetaTrader5 as mt5
 
 MT5_PATH = os.environ.get("MT5_PATH", r"E:\workspace\服务器\MT5\terminal64.exe")
 TCP_HOST = os.environ.get("MT5_TCP_HOST", "127.0.0.1")
-TCP_PORT = int(os.environ.get("MT5_TCP_PORT", "9527"))
+TCP_PORT = int(os.environ.get("MT5_TCP_PORT", "9627"))
 POLL_MS = int(os.environ.get("MT5_POLL_MS", "200"))
 DEFAULT_SYMBOLS = os.environ.get("MT5_SYMBOLS", "XAUUSD,XAGUSD,USDCNH")
 

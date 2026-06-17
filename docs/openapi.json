@@ -2,11 +2,11 @@
   "openapi": "3.0.3",
   "info": {
     "title": "MT5 Local Gateway API",
-    "description": "本地 MT5 网关：行情 HTTP/SSE + MetaApi 兼容交易 RPC（HTTP JSON，非 MetaApi 云 RPC 协议）。\n\n- 行情：由 Python bridge 推送到 TCP 9527，Node 聚合后提供 HTTP\n- 交易：Node `/rpc/*` 代理到 Python `9530`，需 `MT5_TRADE_ENABLED=1`\n\nSwagger UI: `/docs` | OpenAPI: `/openapi.json`",
+    "description": "本地 MT5 网关：行情 HTTP/SSE + MetaApi 兼容交易 RPC（HTTP JSON，非 MetaApi 云 RPC 协议）。\n\n- 行情：由 Python bridge 推送到 TCP 9627，Node 聚合后提供 HTTP\n- 交易：Node `/rpc/*` 代理到 Python `9530`，需 `MT5_TRADE_ENABLED=1`\n\nSwagger UI: `/docs` | OpenAPI: `/openapi.json`",
     "version": "1.0.0"
   },
   "servers": [
-    { "url": "http://127.0.0.1:9528", "description": "本地网关" }
+    { "url": "http://127.0.0.1:9628", "description": "本地网关" }
   ],
   "tags": [
     { "name": "system", "description": "健康检查" },

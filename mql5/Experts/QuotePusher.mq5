@@ -6,7 +6,7 @@
 #property strict
 
 input string InpServerHost   = "127.0.0.1";   // Node.js 服务地址
-input int    InpServerPort   = 9527;          // Node.js TCP 端口
+input int    InpServerPort   = 9627;          // Node.js TCP 端口
 input string InpSymbols      = ""; // 推送品种（逗号分隔，留空则仅推送当前图表品种）
 input int    InpPollMs       = 200;           // 行情轮询间隔（毫秒）
 input int    InpReconnectSec = 3;               // 断线重连间隔（秒）

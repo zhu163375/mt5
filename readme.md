@@ -23,7 +23,7 @@ MT5_TRADE_URL=http://127.0.0.1:9530
 ```powershell
 python -m pip install -r bridge/requirements.txt -i https://pypi.org/simple
 npm run trade          # Python 9530
-npm run start          # Node 9528，代理 /rpc/*
+npm run start          # Node 9628，代理 /rpc/*
 npm run trade:test     # 只读测试账户/持仓
 ```
 
@@ -31,11 +31,11 @@ npm run trade:test     # 只读测试账户/持仓
 
 ```ini
 MT_TRADE_MODE=local
-MT5_GATEWAY_BASE_URL=http://WindowsIP:9528
+MT5_GATEWAY_BASE_URL=http://WindowsIP:9628
 ```
 
 交易 RPC 路径：`/rpc/create_market_buy_order`、`/rpc/get_positions` 等（见 `src/trading-routes.js`）。
 
-**Swagger 文档：** 启动 Node 后打开 http://127.0.0.1:9528/docs  
-OpenAPI JSON：http://127.0.0.1:9528/openapi.json  
+**Swagger 文档：** 启动 Node 后打开 http://127.0.0.1:9628/docs  
+OpenAPI JSON：http://127.0.0.1:9628/openapi.json  
 Python 交易层文档（内网）：http://127.0.0.1:9530/docs

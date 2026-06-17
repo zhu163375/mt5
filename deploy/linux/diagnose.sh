@@ -17,8 +17,8 @@ fi
 grep -q 'startQuoteServer' src/server.js && echo "server.js fix: OK" || echo "server.js fix: MISSING"
 
 echo
-echo "=== ports 9527/9528 ==="
-ss -lntp 2>/dev/null | grep -E ':9527|:9528' || echo "nothing listening on 9527/9528"
+echo "=== ports 9627/9628 ==="
+ss -lntp 2>/dev/null | grep -E ':9627|:9628' || echo "nothing listening on 9627/9628"
 
 echo
 echo "=== pm2 ==="

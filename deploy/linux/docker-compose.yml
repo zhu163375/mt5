@@ -4,10 +4,10 @@ services:
       context: ../..
       dockerfile: deploy/linux/Dockerfile
     ports:
-      - "9527:9527"
-      - "9528:9528"
+      - "9627:9627"
+      - "9628:9628"
     environment:
       MT5_BIND_HOST: 0.0.0.0
-      MT5_TCP_PORT: 9527
-      MT5_HTTP_PORT: 9528
+      MT5_TCP_PORT: 9627
+      MT5_HTTP_PORT: 9628
     restart: unless-stopped

@@ -16,7 +16,7 @@ $nodeJob = Start-Job -ScriptBlock {
 
 Start-Sleep -Seconds 2
 try {
-  $health = Invoke-WebRequest -Uri "http://127.0.0.1:9528/health" -UseBasicParsing -TimeoutSec 5
+  $health = Invoke-WebRequest -Uri "http://127.0.0.1:9628/health" -UseBasicParsing -TimeoutSec 5
   Write-Host "[start] Node ready: $($health.Content)"
 } catch {
   Receive-Job $nodeJob -Keep | Write-Host
@@ -30,6 +30,6 @@ if (Test-Path $Terminal) {
   Write-Host "[warn] terminal64.exe not found: $Terminal"
 }
 
-Write-Host "[start] Node TCP 127.0.0.1:9527"
-Write-Host "[start] Node HTTP http://127.0.0.1:9528/quote/XAUUSD"
+Write-Host "[start] Node TCP 127.0.0.1:9627"
+Write-Host "[start] Node HTTP http://127.0.0.1:9628/quote/XAUUSD"
 Write-Host "[start] stop Node: Stop-Job -Id $($nodeJob.Id); Remove-Job -Id $($nodeJob.Id) -Force"

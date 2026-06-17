@@ -1,4 +1,4 @@
-const BASE = process.env.MT5_GATEWAY_BASE_URL || 'http://127.0.0.1:9528';
+const BASE = process.env.MT5_GATEWAY_BASE_URL || 'http://127.0.0.1:9628';
 
 async function get(path) {
   const res = await fetch(`${BASE}${path}`);

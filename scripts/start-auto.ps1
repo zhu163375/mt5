@@ -17,14 +17,14 @@ if (-not (Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" -ErrorAc
   Start-Sleep -Seconds 8
 }
 
-if (-not (Test-PortListening 9528)) {
+if (-not (Test-PortListening 9628)) {
   Write-Host "[auto] starting Node quote server..."
   Start-Process -WindowStyle Minimized -FilePath "node" -ArgumentList "src/server.js" -WorkingDirectory $ProjectRoot
   Start-Sleep -Seconds 2
 }
 
-if (-not (Test-PortListening 9528)) {
-  throw "Node server failed to start on port 9528"
+if (-not (Test-PortListening 9628)) {
+  throw "Node server failed to start on port 9628"
 }
 
 Write-Host "[auto] starting Python MT5 bridge..."
@@ -33,11 +33,11 @@ $bridge = Start-Process -PassThru -WindowStyle Minimized -FilePath "python" `
 
 Start-Sleep -Seconds 3
 
-$health = Invoke-WebRequest -Uri "http://127.0.0.1:9528/health" -UseBasicParsing
+$health = Invoke-WebRequest -Uri "http://127.0.0.1:9628/health" -UseBasicParsing
 Write-Host "[auto] health: $($health.Content)"
 
 try {
-  $quote = Invoke-WebRequest -Uri "http://127.0.0.1:9528/quote/XAUUSD" -UseBasicParsing
+  $quote = Invoke-WebRequest -Uri "http://127.0.0.1:9628/quote/XAUUSD" -UseBasicParsing
   Write-Host "[auto] XAUUSD: $($quote.Content)"
 } catch {
   Write-Host "[auto] XAUUSD not ready yet: $($_.Exception.Message)"

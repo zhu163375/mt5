@@ -1,4 +1,4 @@
-const BASE = process.env.MT5_GATEWAY_BASE_URL || 'http://127.0.0.1:9528';
+const BASE = process.env.MT5_GATEWAY_BASE_URL || 'http://127.0.0.1:9628';
 const TRADE = process.env.MT5_RUN_TRADE_TEST === '1';
 
 /** @type {{ name: string, status: 'PASS'|'FAIL'|'SKIP', detail: string }[]} */

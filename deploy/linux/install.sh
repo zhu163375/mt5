@@ -35,5 +35,5 @@ else
 fi
 
 sleep 2
-curl -sf "http://127.0.0.1:9528/health" && echo
-echo "[install] done. open port 9527 for Windows bridge IP only"
+curl -sf "http://127.0.0.1:9628/health" && echo
+echo "[install] done. open port 9627 for Windows bridge IP only"

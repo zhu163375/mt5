@@ -11,7 +11,7 @@ Write-Host "[start] starting Node quote server..."
 $nodeJob = Start-Job -ScriptBlock {
   param($root)
   Set-Location $root
-  node src/server.js
+  node src/start-server.js
 } -ArgumentList $ProjectRoot
 
 Start-Sleep -Seconds 2

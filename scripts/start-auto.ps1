@@ -19,7 +19,7 @@ if (-not (Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" -ErrorAc
 
 if (-not (Test-PortListening 9628)) {
   Write-Host "[auto] starting Node quote server..."
-  Start-Process -WindowStyle Minimized -FilePath "node" -ArgumentList "src/server.js" -WorkingDirectory $ProjectRoot
+  Start-Process -WindowStyle Minimized -FilePath "node" -ArgumentList "src/start-server.js" -WorkingDirectory $ProjectRoot
   Start-Sleep -Seconds 2
 }
 

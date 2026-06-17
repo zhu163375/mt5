@@ -351,6 +351,8 @@ export function createQuoteStore() {
 
 export function startQuoteServer() {
   console.log('[mt5] starting quote server...');
+  startSseHeartbeat();
+  startQuotePruner();
   startTcpServer();
   startHttpServer();
 }
@@ -359,15 +361,9 @@ function isMainModule() {
   const selfPath = fileURLToPath(import.meta.url);
   const entry = process.argv[1];
   if (!entry) return false;
-  if (path.resolve(entry) === selfPath) return true;
-  // PM2 fork 模式通过 ProcessContainerFork.js 加载脚本，argv[1] 不是入口文件
-  return entry.includes('ProcessContainerFork');
+  return path.resolve(entry) === selfPath;
 }
 
 if (isMainModule()) {
-  console.log('[mt5] starting quote server...');
-  startSseHeartbeat();
-  startQuotePruner();
-  startTcpServer();
-  startHttpServer();
+  startQuoteServer();
 }

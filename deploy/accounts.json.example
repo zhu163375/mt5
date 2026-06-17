@@ -1,0 +1,13 @@
+{
+  "default": "60100824",
+  "60100824": {
+    "gateway": "http://10.0.1.10:9628",
+    "label": "demo-A",
+    "enabled": true
+  },
+  "60100825": {
+    "gateway": "http://10.0.1.11:9628",
+    "label": "live-B",
+    "enabled": true
+  }
+}

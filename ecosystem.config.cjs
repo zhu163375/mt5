@@ -39,6 +39,7 @@ const apps = [
       MT5_TCP_PORT: deployEnv.MT5_TCP_PORT || "9627",
       MT5_HTTP_PORT: deployEnv.MT5_HTTP_PORT || "9628",
       MT5_TRADE_ENABLED: tradeEnabled,
+      MT5_TRADE_MODE: deployEnv.MT5_TRADE_MODE || "local",
       MT5_TRADE_URL: tradeUrl,
     },
     env_production_linux: {

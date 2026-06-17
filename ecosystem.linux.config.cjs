@@ -1,4 +1,4 @@
-/** PM2 config for Linux quote server only */
+/** PM2 config for Linux unified gateway (quotes + account router) */
 module.exports = {
   apps: [
     {
@@ -16,6 +16,11 @@ module.exports = {
         MT5_BIND_HOST: "0.0.0.0",
         MT5_TCP_PORT: "9627",
         MT5_HTTP_PORT: "9628",
+        MT5_TRADE_ENABLED: "1",
+        MT5_TRADE_MODE: "router",
+        MT5_ACCOUNT_MAP: require("node:path").join(__dirname, "deploy", "accounts.json"),
+        MT5_REQUIRE_ACCOUNT_ID: "1",
+        MT5_BACKEND_PROBE_MS: "3000",
       },
     },
   ],

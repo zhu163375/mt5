@@ -2,16 +2,17 @@
   "openapi": "3.0.3",
   "info": {
     "title": "MT5 Local Gateway API",
-    "description": "本地 MT5 网关：行情 HTTP/SSE + MetaApi 兼容交易 RPC（HTTP JSON，非 MetaApi 云 RPC 协议）。\n\n- 行情：由 Python bridge 推送到 TCP 9627，Node 聚合后提供 HTTP\n- 交易：Node `/rpc/*` 代理到 Python `9530`，需 `MT5_TRADE_ENABLED=1`\n\nSwagger UI: `/docs` | OpenAPI: `/openapi.json`",
+    "description": "MT5 网关：行情 HTTP/SSE + MetaApi 兼容交易 RPC（HTTP JSON）。\n\n**运行模式**\n- `local`（Windows）：`/rpc/*` → 本机 Python `9530`\n- `router`（Linux 统一入口）：`/rpc/*` 按 `X-Account-Id` 转发至 `deploy/accounts.json` 中的 Windows 网关\n\n**行情**：Python bridge → TCP 9627 → Node `/quotes`\n\n**鉴权**（可选）：`Authorization: Bearer <MT5_GATEWAY_API_KEY>` 或 `X-Api-Key`；IP 白名单 `MT5_GATEWAY_IP_WHITELIST`\n\nSwagger: `/docs` | OpenAPI: `/openapi.json`",
     "version": "1.0.0"
   },
   "servers": [
-    { "url": "http://127.0.0.1:9628", "description": "本地网关" }
+    { "url": "http://127.0.0.1:9628", "description": "Windows 本机网关 (local)" },
+    { "url": "http://43.99.61.45:9628", "description": "Linux 统一入口 (router)" }
   ],
   "tags": [
     { "name": "system", "description": "健康检查" },
     { "name": "quotes", "description": "实时行情" },
-    { "name": "trade", "description": "MetaApi 兼容交易（市价开平/查询）" }
+    { "name": "trade", "description": "MetaApi 兼容交易。router 模式需 Header `X-Account-Id`（MT5 登录号）" }
   ],
   "paths": {
     "/health": {
@@ -23,15 +24,16 @@
             "description": "OK",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ok": { "type": "boolean" },
-                    "quotes": { "type": "integer" },
-                    "trade": { "type": "boolean" }
+                "schema": { "$ref": "#/components/schemas/HealthResponse" },
+                "example": {
+                  "ok": true,
+                  "quotes": 3,
+                  "trade": true,
+                  "mode": "router",
+                  "backends": {
+                    "60100824": { "ok": true, "gateway": "http://10.0.1.10:9628", "latencyMs": 12, "trade": true }
                   }
-                },
-                "example": { "ok": true, "quotes": 3, "trade": true }
+                }
               }
             }
           }
@@ -97,6 +99,11 @@
         "tags": ["trade"],
         "summary": "get_account_information",
         "description": "MetaApi 等价：查询 MT 账户信息",
+        "parameters": [
+          { "$ref": "#/components/parameters/XAccountId" },
+          { "$ref": "#/components/parameters/AccountIdQuery" }
+        ],
+        "security": [{ "GatewayApiKey": [] }, {}],
         "responses": {
           "200": {
             "description": "OK",
@@ -106,6 +113,11 @@
               }
             }
           },
+          "400": { "description": "缺少 X-Account-Id（MT5_REQUIRE_ACCOUNT_ID=1）" },
+          "401": { "description": "API Key 无效" },
+          "403": { "description": "IP 不在白名单" },
+          "404": { "description": "未知 accountId 或账户未配置" },
+          "502": { "description": "router 转发 Windows 网关失败" },
           "503": { "description": "交易未启用 (MT5_TRADE_ENABLED=0)" }
         }
       }
@@ -115,6 +127,11 @@
         "tags": ["trade"],
         "summary": "get_positions",
         "description": "MetaApi 等价：当前全部持仓",
+        "parameters": [
+          { "$ref": "#/components/parameters/XAccountId" },
+          { "$ref": "#/components/parameters/AccountIdQuery" }
+        ],
+        "security": [{ "GatewayApiKey": [] }, {}],
         "responses": {
           "200": {
             "description": "OK",
@@ -126,7 +143,12 @@
                 }
               }
             }
-          }
+          },
+          "400": { "description": "缺少 X-Account-Id" },
+          "401": { "description": "API Key 无效" },
+          "403": { "description": "IP 不在白名单" },
+          "404": { "description": "未知 accountId" },
+          "502": { "description": "router 转发失败" }
         }
       }
     },
@@ -135,6 +157,8 @@
         "tags": ["trade"],
         "summary": "get_position",
         "parameters": [
+          { "$ref": "#/components/parameters/XAccountId" },
+          { "$ref": "#/components/parameters/AccountIdQuery" },
           {
             "name": "positionId",
             "in": "path",
@@ -142,6 +166,7 @@
             "schema": { "type": "string" }
           }
         ],
+        "security": [{ "GatewayApiKey": [] }, {}],
         "responses": {
           "200": {
             "description": "OK",
@@ -160,6 +185,8 @@
         "tags": ["trade"],
         "summary": "get_order",
         "parameters": [
+          { "$ref": "#/components/parameters/XAccountId" },
+          { "$ref": "#/components/parameters/AccountIdQuery" },
           {
             "name": "orderId",
             "in": "path",
@@ -167,6 +194,7 @@
             "schema": { "type": "string" }
           }
         ],
+        "security": [{ "GatewayApiKey": [] }, {}],
         "responses": {
           "200": {
             "description": "OK",
@@ -185,6 +213,8 @@
         "tags": ["trade"],
         "summary": "get_history_orders_by_time_range",
         "parameters": [
+          { "$ref": "#/components/parameters/XAccountId" },
+          { "$ref": "#/components/parameters/AccountIdQuery" },
           {
             "name": "from",
             "in": "query",
@@ -200,6 +230,7 @@
             "example": "2026-06-16T23:59:59Z"
           }
         ],
+        "security": [{ "GatewayApiKey": [] }, {}],
         "responses": {
           "200": {
             "description": "OK",
@@ -219,7 +250,11 @@
       "post": {
         "tags": ["trade"],
         "summary": "create_market_buy_order",
-        "description": "MetaApi 等价：市价开多（立即成交，非挂单）",
+        "description": "MetaApi 等价：市价开多（立即成交，非挂单）。router 模式必须带 X-Account-Id。",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountIdHeader" }
+        ],
+        "security": [{ "GatewayApiKey": [] }, {}],
         "requestBody": {
           "required": true,
           "content": {
@@ -246,6 +281,10 @@
         "tags": ["trade"],
         "summary": "create_market_sell_order",
         "description": "MetaApi 等价：市价开空",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountIdHeader" }
+        ],
+        "security": [{ "GatewayApiKey": [] }, {}],
         "requestBody": {
           "required": true,
           "content": {
@@ -271,6 +310,10 @@
         "tags": ["trade"],
         "summary": "close_position",
         "description": "MetaApi 等价：按 positionId 全平",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountIdHeader" }
+        ],
+        "security": [{ "GatewayApiKey": [] }, {}],
         "requestBody": {
           "required": true,
           "content": {
@@ -296,6 +339,10 @@
         "tags": ["trade"],
         "summary": "close_position_partially",
         "description": "MetaApi 等价：部分平仓",
+        "parameters": [
+          { "$ref": "#/components/parameters/AccountIdHeader" }
+        ],
+        "security": [{ "GatewayApiKey": [] }, {}],
         "requestBody": {
           "required": true,
           "content": {
@@ -318,7 +365,54 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "GatewayApiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "设置 MT5_GATEWAY_API_KEY 时必填；也可用 Header X-Api-Key"
+      }
+    },
+    "parameters": {
+      "XAccountId": {
+        "name": "X-Account-Id",
+        "in": "header",
+        "required": false,
+        "schema": { "type": "string", "example": "60100824" },
+        "description": "MT5 登录号。router 模式用于选择 accounts.json 中的后端网关"
+      },
+      "AccountIdQuery": {
+        "name": "accountId",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string", "example": "60100824" },
+        "description": "GET 类接口可用 query 传递 accountId（优先于 default）"
+      }
+    },
     "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean" },
+          "quotes": { "type": "integer" },
+          "trade": { "type": "boolean" },
+          "mode": { "type": "string", "enum": ["local", "router", "off"] },
+          "tradeUrl": { "type": "string", "description": "local 模式 Python 地址" },
+          "backends": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "ok": { "type": "boolean" },
+                "gateway": { "type": "string" },
+                "latencyMs": { "type": "integer" },
+                "trade": { "type": "boolean" },
+                "error": { "type": "string" }
+              }
+            },
+            "description": "router 模式各 accountId 后端探测结果"
+          }
+        }
+      },
       "Quote": {
         "type": "object",
         "properties": {

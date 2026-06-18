@@ -13,6 +13,21 @@ const HTTP_PORT = Number(process.env.MT5_HTTP_PORT || 9628);
 const QUOTE_TTL_MS = Number(process.env.MT5_QUOTE_TTL_MS || 60_000);
 const QUOTE_PRUNE_MS = Number(process.env.MT5_QUOTE_PRUNE_MS || 10_000);
 
+/** @param {string} symbol */
+function quoteDigits(symbol) {
+  const s = symbol.toUpperCase();
+  if (s.includes('XAU') || s.includes('XAG')) return 2;
+  if (s.endsWith('JPY')) return 3;
+  return 5;
+}
+
+/** @param {string} symbol @param {number} value */
+function formatQuotePrice(symbol, value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return Number(n.toFixed(quoteDigits(symbol)));
+}
+
 /** @type {Map<string, { symbol: string, bid: number, ask: number, time: number, updatedAt: number }>} */
 const quotes = new Map();
 
@@ -105,14 +120,20 @@ function handleLine(line) {
 
   if (payload.type !== 'quote' || !payload.symbol) return;
 
-  quotes.set(payload.symbol, {
-    symbol: payload.symbol,
-    bid: Number(payload.bid),
-    ask: Number(payload.ask),
+  const symbol = String(payload.symbol).toUpperCase();
+  const bid = formatQuotePrice(symbol, payload.bid);
+  const ask = formatQuotePrice(symbol, payload.ask);
+  if (bid <= 0 || ask <= 0 || ask < bid) return;
+  if (symbol === 'USDCNH' && (bid < 5 || bid > 10)) return;
+
+  quotes.set(symbol, {
+    symbol,
+    bid,
+    ask,
     time: Number(payload.time || 0),
     updatedAt: Date.now(),
   });
-  broadcastSse('quote', quotes.get(payload.symbol));
+  broadcastSse('quote', quotes.get(symbol));
 }
 
 function startTcpServer() {
@@ -154,7 +175,7 @@ function renderQuoteRows(list) {
     .sort((a, b) => a.symbol.localeCompare(b.symbol))
     .map((q) => {
       const age = Math.max(0, Math.round((Date.now() - q.updatedAt) / 1000));
-      return `<tr data-symbol="${q.symbol}"><td>${q.symbol}</td><td>${q.bid}</td><td>${q.ask}</td><td>${(q.ask - q.bid).toFixed(5)}</td><td class="age">${age}s前</td></tr>`;
+      return `<tr data-symbol="${q.symbol}"><td>${q.symbol}</td><td>${q.bid.toFixed(quoteDigits(q.symbol))}</td><td>${q.ask.toFixed(quoteDigits(q.symbol))}</td><td>${(q.ask - q.bid).toFixed(quoteDigits(q.symbol))}</td><td class="age">${age}s前</td></tr>`;
     })
     .join('');
 }
@@ -180,10 +201,18 @@ th{background:#1e293b}.empty{color:#f87171}
 <script>
 const quotes = new Map();
 
+function quoteDigits(symbol) {
+  const s = String(symbol).toUpperCase();
+  if (s.includes('XAU') || s.includes('XAG')) return 2;
+  if (s.endsWith('JPY')) return 3;
+  return 5;
+}
+
 function renderRow(q) {
   const age = Math.max(0, Math.round((Date.now() - q.updatedAt) / 1000));
-  const spread = (q.ask - q.bid).toFixed(5);
-  return '<tr data-symbol="' + q.symbol + '"><td>' + q.symbol + '</td><td>' + q.bid + '</td><td>' + q.ask + '</td><td>' + spread + '</td><td class="age">' + age + 's前</td></tr>';
+  const spread = (q.ask - q.bid).toFixed(quoteDigits(q.symbol));
+  const digits = quoteDigits(q.symbol);
+  return '<tr data-symbol="' + q.symbol + '"><td>' + q.symbol + '</td><td>' + q.bid.toFixed(digits) + '</td><td>' + q.ask.toFixed(digits) + '</td><td>' + spread + '</td><td class="age">' + age + 's前</td></tr>';
 }
 
 function renderTable() {
@@ -210,9 +239,9 @@ function upsertQuote(q) {
     rows.sort((a, b) => a.dataset.symbol.localeCompare(b.dataset.symbol));
     rows.forEach((tr) => tbody.appendChild(tr));
   } else {
-    row.children[1].textContent = q.bid;
-    row.children[2].textContent = q.ask;
-    row.children[3].textContent = (q.ask - q.bid).toFixed(5);
+    row.children[1].textContent = q.bid.toFixed(quoteDigits(q.symbol));
+    row.children[2].textContent = q.ask.toFixed(quoteDigits(q.symbol));
+    row.children[3].textContent = (q.ask - q.bid).toFixed(quoteDigits(q.symbol));
     row.querySelector('.age').textContent = Math.max(0, Math.round((Date.now() - q.updatedAt) / 1000)) + 's前';
   }
   document.getElementById('count').textContent = quotes.size;

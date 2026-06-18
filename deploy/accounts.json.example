@@ -1,7 +1,7 @@
 {
   "default": "60100824",
   "60100824": {
-    "gateway": "http://10.0.1.10:9628",
+    "gateway": "http://112.96.247.141:9628",
     "label": "demo-A",
     "enabled": true
   },

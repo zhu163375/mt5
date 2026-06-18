@@ -10,7 +10,9 @@ import time
 
 import MetaTrader5 as mt5
 
-MT5_PATH = os.environ.get("MT5_PATH", r"E:\workspace\服务器\MT5\terminal64.exe")
+from mt5_util import format_last_error, resolve_mt5_path
+
+MT5_PATH = resolve_mt5_path()
 TCP_HOST = os.environ.get("MT5_TCP_HOST", "127.0.0.1")
 TCP_PORT = int(os.environ.get("MT5_TCP_PORT", "9627"))
 POLL_MS = int(os.environ.get("MT5_POLL_MS", "200"))
@@ -53,12 +55,18 @@ def send_quote(sock: socket.socket, symbol: str, bid: float, ask: float, tick_ti
 
 
 def ensure_mt5() -> list[str]:
+    print(f"[bridge] MT5_PATH={MT5_PATH}", flush=True)
+    if not os.path.isfile(MT5_PATH):
+        raise RuntimeError(f"MT5 terminal not found: {MT5_PATH}")
+
     if not mt5.initialize(MT5_PATH):
-        raise RuntimeError(f"MT5 initialize failed: {mt5.last_error()}")
+        raise RuntimeError(f"MT5 initialize failed: {format_last_error()} (path={MT5_PATH})")
 
     account = mt5.account_info()
     if account is None:
-        raise RuntimeError(f"MT5 account unavailable: {mt5.last_error()}")
+        raise RuntimeError(
+            f"MT5 account unavailable: {format_last_error()} — open MT5 and login first"
+        )
 
     print(f"[bridge] MT5 account {account.login} @ {account.server}", flush=True)
 
@@ -78,12 +86,33 @@ def ensure_mt5() -> list[str]:
     return active
 
 
+def normalize_quote(symbol: str, bid: float, ask: float) -> tuple[float, float] | None:
+    info = mt5.symbol_info(symbol)
+    if info is None:
+        return None
+    digits = int(info.digits)
+    bid_r = round(float(bid), digits)
+    ask_r = round(float(ask), digits)
+    if bid_r <= 0 or ask_r <= 0 or ask_r < bid_r:
+        return None
+    # 过滤明显异常的 tick（偶发脏数据）
+    if symbol == "USDCNH" and not (5.0 <= bid_r <= 10.0):
+        return None
+    if symbol in ("XAUUSD", "XAGUSD") and bid_r > 100000:
+        return None
+    return bid_r, ask_r
+
+
 def push_once(sock: socket.socket, symbols: list[str]) -> None:
     for symbol in symbols:
         tick = mt5.symbol_info_tick(symbol)
         if tick is None or tick.bid <= 0 or tick.ask <= 0:
             continue
-        if not send_quote(sock, symbol, tick.bid, tick.ask, int(tick.time)):
+        normalized = normalize_quote(symbol, tick.bid, tick.ask)
+        if normalized is None:
+            continue
+        bid, ask = normalized
+        if not send_quote(sock, symbol, bid, ask, int(tick.time)):
             raise ConnectionError("tcp send failed")
 
 

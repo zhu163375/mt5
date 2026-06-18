@@ -12,6 +12,7 @@
     "auto": "powershell -ExecutionPolicy Bypass -File scripts/start-auto.ps1",
     "status": "powershell -ExecutionPolicy Bypass -File scripts/status.ps1",
     "bridge": "powershell -ExecutionPolicy Bypass -File deploy/windows/start-bridge.ps1",
+    "install:win": "powershell -ExecutionPolicy Bypass -File deploy/windows/install.ps1",
     "trade": "powershell -ExecutionPolicy Bypass -File deploy/windows/start-trade.ps1",
     "trade:test": "node examples/test-trade-readonly.js",
     "pm2:linux": "pm2 start ecosystem.linux.config.cjs",

@@ -1,44 +1,63 @@
-配置 config.env
+# MT5 行情与交易网关
 
-cd C:\mt5_project
-python --version
-python -c "import platform; print(platform.architecture())"
-python -m pip install MetaTrader5 -i https://pypi.org/simple
-python -c "import MetaTrader5 as mt5; print('OK')"
-python bridge\mt5_bridge.py
+从 MetaTrader 5 推送实时行情到 Linux，并提供 MetaApi 兼容的 HTTP 交易 RPC。
 
-## 阶段 1：本地交易 RPC（MetaApi 兼容）
+## 架构简述
 
-Windows 网关启用交易：
+- **Linux**：行情聚合 + 统一 HTTP 入口（router 模式）
+- **Windows**：MT5 + Python bridge + 本机交易网关（local 模式）
 
-```ini
-# deploy/config.env
-MT5_TRADE_ENABLED=1
-MT5_TRADE_PORT=9530
-MT5_TRADE_URL=http://127.0.0.1:9530
-```
+详细架构与端口说明 → **[docs/deploy.md](docs/deploy.md)**
 
-安装依赖并启动：
+## 部署文档
+
+| 场景 | 文档 |
+|------|------|
+| **远程 Windows（推荐先看）** | [docs/deploy-remote-windows.md](docs/deploy-remote-windows.md) |
+| Linux 行情机 / 统一入口 | [docs/deploy-linux.md](docs/deploy-linux.md) |
+
+## 配置
 
 ```powershell
-python -m pip install -r bridge/requirements.txt -i https://pypi.org/simple
-npm run trade          # Python 9530
-npm run start          # Node 9628，代理 /rpc/*（local 或 router 模式）
-npm run trade:test     # 只读测试账户/持仓
+# Windows
+copy deploy\config.windows.env.example deploy\config.env
+
+# Linux
+copy deploy\config.linux.env.example deploy\config.env
+copy deploy\accounts.json.example deploy\accounts.json
 ```
 
-`gold-metaapi-node` 切换本地模式：
+## 常用命令
+
+```powershell
+# Windows — 一键安装 + PM2 启动（见 deploy-remote-windows.md）
+powershell -ExecutionPolicy Bypass -File deploy\windows\install.ps1
+pm2 start ecosystem.config.cjs
+```
+
+```bash
+# Linux
+pm2 start ecosystem.linux.config.cjs
+```
+
+```powershell
+# 验证
+Invoke-WebRequest http://127.0.0.1:9628/health -UseBasicParsing
+node examples\run-api-tests.js
+```
+
+## API 文档
+
+启动 Node 后：
+
+- Swagger UI: http://127.0.0.1:9628/docs
+- OpenAPI: http://127.0.0.1:9628/openapi.json
+- 仪表盘: http://127.0.0.1:9628/
+
+业务侧（gold-metaapi-node）：
 
 ```ini
 MT_TRADE_MODE=local
-MT5_GATEWAY_BASE_URL=http://LinuxIP:9628
-MT5_GATEWAY_API_KEY=与 Linux MT5_GATEWAY_API_KEY 一致
+MT5_GATEWAY_BASE_URL=http://<LinuxIP>:9628
+# Header: X-Account-Id: <MT5账户号>
 ```
-
-Linux 统一入口（router 模式）需配置 `deploy/accounts.json`，请求带 Header `X-Account-Id`。
-
-交易 RPC 路径：`/rpc/create_market_buy_order`、`/rpc/get_positions` 等（见 `src/trading-routes.js`）。
-
-**Swagger 文档：** 启动 Node 后打开 http://127.0.0.1:9628/docs  
-OpenAPI JSON：http://127.0.0.1:9628/openapi.json  
-Python 交易层文档（内网）：http://127.0.0.1:9530/docs

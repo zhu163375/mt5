@@ -10,7 +10,9 @@ from typing import Any
 
 import MetaTrader5 as mt5
 
-MT5_PATH = os.environ.get("MT5_PATH", r"E:\workspace\服务器\MT5\terminal64.exe")
+from mt5_util import format_last_error, resolve_mt5_path
+
+MT5_PATH = resolve_mt5_path()
 TRADE_MAGIC = int(os.environ.get("MT5_TRADE_MAGIC", "880001"))
 TRADE_DEVIATION = int(os.environ.get("MT5_TRADE_DEVIATION", "20"))
 
@@ -34,10 +36,10 @@ def _ensure_mt5() -> None:
     if _initialized and mt5.terminal_info() is not None:
         return
     if not mt5.initialize(MT5_PATH):
-        raise TradingError(f"MT5 initialize failed: {mt5.last_error()}", code="MT5_INIT")
+        raise TradingError(f"MT5 initialize failed: {format_last_error()}", code="MT5_INIT")
     account = mt5.account_info()
     if account is None:
-        raise TradingError(f"MT5 account unavailable: {mt5.last_error()}", code="NO_ACCOUNT")
+        raise TradingError(f"MT5 account unavailable: {format_last_error()}", code="NO_ACCOUNT")
     _initialized = True
 
 
@@ -185,7 +187,7 @@ def _send_market_order(
 
     result = mt5.order_send(request)
     if result is None:
-        raise TradingError(f"order_send failed: {mt5.last_error()}", code="ORDER_SEND")
+        raise TradingError(f"order_send failed: {format_last_error()}", code="ORDER_SEND")
     if result.retcode != mt5.TRADE_RETCODE_DONE:
         raise TradingError(
             f"order rejected retcode={result.retcode} comment={result.comment}",
@@ -280,7 +282,7 @@ def _close_position_ticket(
     }
     result = mt5.order_send(request)
     if result is None:
-        raise TradingError(f"close failed: {mt5.last_error()}", code="ORDER_SEND")
+        raise TradingError(f"close failed: {format_last_error()}", code="ORDER_SEND")
     if result.retcode != mt5.TRADE_RETCODE_DONE:
         raise TradingError(
             f"close rejected retcode={result.retcode} comment={result.comment}",
@@ -347,7 +349,7 @@ def get_account_information() -> dict[str, Any]:
     def _load() -> dict[str, Any]:
         info = mt5.account_info()
         if info is None:
-            raise TradingError(f"account unavailable: {mt5.last_error()}", code="NO_ACCOUNT")
+            raise TradingError(f"account unavailable: {format_last_error()}", code="NO_ACCOUNT")
         return _map_account(info)
 
     return _with_lock("get_account_information", _load)

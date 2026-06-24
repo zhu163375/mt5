@@ -329,6 +329,14 @@ def get_positions() -> list[dict[str, Any]]:
     return _with_lock("get_positions", _load)
 
 
+def get_orders() -> list[dict[str, Any]]:
+    def _load() -> list[dict[str, Any]]:
+        orders = mt5.orders_get() or []
+        return [_map_order(item) for item in orders]
+
+    return _with_lock("get_orders", _load)
+
+
 def get_order(order_id: str) -> dict[str, Any] | None:
     def _load() -> dict[str, Any] | None:
         ticket = int(str(order_id).strip())

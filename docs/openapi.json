@@ -152,6 +152,36 @@
         }
       }
     },
+    "/rpc/get_orders": {
+      "get": {
+        "tags": ["trade"],
+        "summary": "get_orders",
+        "description": "MetaApi 等价：当前全部挂单（pending orders）",
+        "parameters": [
+          { "$ref": "#/components/parameters/XAccountId" },
+          { "$ref": "#/components/parameters/AccountIdQuery" }
+        ],
+        "security": [{ "GatewayApiKey": [] }, {}],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Order" }
+                }
+              }
+            }
+          },
+          "400": { "description": "缺少 X-Account-Id" },
+          "401": { "description": "API Key 无效" },
+          "403": { "description": "IP 不在白名单" },
+          "404": { "description": "未知 accountId" },
+          "502": { "description": "router 转发失败" }
+        }
+      }
+    },
     "/rpc/get_position/{positionId}": {
       "get": {
         "tags": ["trade"],

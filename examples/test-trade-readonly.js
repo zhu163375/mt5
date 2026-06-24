@@ -9,3 +9,4 @@ async function get(path) {
 await get('/health');
 await get('/rpc/get_account_information');
 await get('/rpc/get_positions');
+await get('/rpc/get_orders');

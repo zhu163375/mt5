@@ -200,6 +200,12 @@ async function dispatchTradeRoute(req, res, pathname, accountId, backend, body) 
     return true;
   }
 
+  if (req.method === 'GET' && pathname === '/rpc/get_orders') {
+    const result = await proxyTradeRequest(backend.gateway, '/rpc/get_orders', proxyOptions);
+    sendJson(res, result.status, result.data);
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/rpc/get_account_information') {
     const result = await proxyTradeRequest(
       backend.gateway,

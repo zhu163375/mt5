@@ -72,6 +72,12 @@ await run('GET /rpc/get_positions', async () => {
   return `count=${data.length}`;
 });
 
+await run('GET /rpc/get_orders', async () => {
+  const data = await get('/rpc/get_orders');
+  if (!Array.isArray(data)) throw new Error(JSON.stringify(data));
+  return `count=${data.length}`;
+});
+
 await run('GET /rpc/get_history_orders_by_time_range', async () => {
   const q = new URLSearchParams({
     from: '2026-06-01T00:00:00Z',

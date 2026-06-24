@@ -130,6 +130,14 @@ def route_get_positions() -> list[dict[str, Any]]:
         raise _handle_trading_error(err) from err
 
 
+@app.get("/rpc/get_orders")
+def route_get_orders() -> list[dict[str, Any]]:
+    try:
+        return trading.get_orders()
+    except trading.TradingError as err:
+        raise _handle_trading_error(err) from err
+
+
 @app.get("/rpc/get_order/{order_id}")
 def route_get_order(order_id: str) -> dict[str, Any]:
     try:

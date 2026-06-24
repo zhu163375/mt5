@@ -36,7 +36,8 @@ Windows 远程机 (MT5 + 网关)           MT5_TRADE_MODE=local
 
 | 场景 | 文档 |
 |------|------|
-| **远程 Windows（MT5 + bridge + 交易）** | [deploy-remote-windows.md](./deploy-remote-windows.md) |
+| **远程 Windows（单账户）** | [deploy-remote-windows.md](./deploy-remote-windows.md) |
+| **远程 Windows（双账户）** | [deploy-windows-dual-accounts.md](./deploy-windows-dual-accounts.md) |
 | Linux 行情机 / 统一入口 | [deploy-linux.md](./deploy-linux.md) |
 
 ## 快速验证

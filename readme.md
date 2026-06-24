@@ -14,6 +14,7 @@
 | 场景 | 文档 |
 |------|------|
 | **远程 Windows（推荐先看）** | [docs/deploy-remote-windows.md](docs/deploy-remote-windows.md) |
+| **Windows 双账户** | [docs/deploy-windows-dual-accounts.md](docs/deploy-windows-dual-accounts.md) |
 | Linux 行情机 / 统一入口 | [docs/deploy-linux.md](docs/deploy-linux.md) |
 
 ## 配置
